@@ -153,7 +153,7 @@ class Worker():
         self.addnoises_mean_values = []
         self.hidden_mean_values    = []
         self.episode_reward_reversal = []
-        model_name                += '_noise_{0}_network_{1}'.format(noise * 1, 'RNN')
+        model_name                += '_network_{}'.format('RNN')
         self.summary_writer        = tf.summary.FileWriter("REINFORCEtrainings/" + str(model_name))
         self.coefficient    = coefficient
         self.ac_network = AC_Network(trainer, noise, coefficient)
