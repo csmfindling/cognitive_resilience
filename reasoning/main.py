@@ -16,59 +16,59 @@ def normalized_columns_initializer(std=1.0):
 
 # generating training task
 num_steps    = 5
-def generate_task(num_tasks):
+def generate_task(num_trials):
     '''
     Input: the number of tasks to generate
     Output: the rewards (-1/1), the probability of getting a reward and
             an integer giving the `context` meaning which cue is presented
     '''
-    rand_ints = np.random.randint(1, 9, size=num_tasks)
-    rand_ints = rand_ints + 1 * (rand_ints >= 5)
-    proba_r   = rand_ints * 0.1
-    rewards    = np.zeros([num_tasks, 2])
-    random_numb = np.random.rand(num_tasks)
+    rand_ints    = np.random.randint(1, 9, size=num_trials)
+    rand_ints    = rand_ints + 1 * (rand_ints >= 5)
+    proba_r      = rand_ints * 0.1
+    rewards      = np.zeros([num_trials, 2])
+    random_numb  = np.random.rand(num_trials)
     rewards[:,0] = (proba_r < random_numb) * 1.
     rewards[:,1] = (proba_r >= random_numb) * 1.
     return 2 * rewards - 1, proba_r, (rand_ints - 1 - 1 * (rand_ints > 5))
 
 num_steps_test = 5
-def generate_test_task(num_tasks):
+def generate_test_task(num_trials):
     '''
     Input: the number of tasks to generate
     Output: the rewards (-1/1), the probability of getting a reward and
             an integer giving the `context` meaning the sequence of cues presented
     '''    
-    rand_ints = np.random.randint(1, 9, size=(num_tasks, num_steps_test)) #1 + np.random.randint(2, size=(num_tasks, num_steps_test)) * 7 #  
+    rand_ints    = np.random.randint(1, 9, size=(num_trials, num_steps_test))
     rand_ints    = rand_ints + 1 * (rand_ints >= 5)
     proba_r      = np.mean(rand_ints * 0.1, axis=-1)
-    rewards      = np.zeros([num_tasks, 2])
-    random_numb  = np.random.rand(num_tasks)
+    rewards      = np.zeros([num_trials, 2])
+    random_numb  = np.random.rand(num_trials)
     rewards[:,0] = (proba_r < random_numb) * 1.
     rewards[:,1] = (proba_r >= random_numb) * 1.
     return 2 * rewards - 1, proba_r, (rand_ints - 1 - 1 * (rand_ints > 5))
 
-# the probabilistic tasks
+# class to generate the probabilistic tasks
 class probabilistic_task():
     def __init__(self):
         self.reset()
 
-    # resets the `num_tasks` tasks
-    def reset(self, num_tasks=100, cond=0):
-        self.num_tasks         = num_tasks
+    # resets the `num_trials` tasks
+    def reset(self, num_trials=100, cond=0):
+        self.num_trials         = num_trials
         self.timestep          = 0
         if cond==0: # if train
-            noisy_rew, proba_r, context  = generate_task(num_tasks)
+            noisy_rew, proba_r, context  = generate_task(num_trials)
         elif cond==1: # if test
-            noisy_rew, proba_r, context  = generate_test_task(num_tasks)
+            noisy_rew, proba_r, context  = generate_test_task(num_trials)
         else:
             assert(False)
         self.probabilistic_rewards = noisy_rew
         self.context              = context
         self.proba_r              = proba_r
 
-    # return the rewards the `num_tasks` tasks given actions `actions`
+    # return the rewards the `num_trials` tasks given actions `actions`
     def pullArm(self,actions):        
-        return self.probabilistic_rewards[range(self.num_tasks), np.array(actions, dtype=np.int)]
+        return self.probabilistic_rewards[range(self.num_trials), np.array(actions, dtype=np.int)]
 
 class AC_Network():
     def __init__(self, trainer, noise, coefficient):
@@ -174,15 +174,15 @@ class Worker():
             feed_dict=feed_dict)
         return p_l / len(rollout),e_l / len(rollout), 0.,v_n
 
-    def test(self, sess, num_tasks=100):
+    def test(self, sess, num_trials=100):
         '''
         test method in weather prediction A* task
-        '''        
-        self.env.reset(num_tasks=num_tasks, cond=1)
+        '''
+        self.env.reset(num_trials=num_trials, cond=1)
 
-        rnn_state          = np.tile(self.ac_network.state_init[0], (num_tasks, 1))
-        h_noise  = np.array(np.random.normal(size=(num_tasks, num_steps_test + 1, self.ac_network.nb_units)) * self.coefficient, dtype=np.float32)
-        contexts = np.concatenate((self.env.context, -np.ones(num_tasks)[:,np.newaxis]), axis=-1)
+        rnn_state          = np.tile(self.ac_network.state_init[0], (num_trials, 1))
+        h_noise  = np.array(np.random.normal(size=(num_trials, num_steps_test + 1, self.ac_network.nb_units)) * self.coefficient, dtype=np.float32)
+        contexts = np.concatenate((self.env.context, -np.ones(num_trials)[:,np.newaxis]), axis=-1)
 
         #Take an action using probabilities from policy network output.        
         feed_dict = {self.ac_network.context:contexts, 
@@ -192,25 +192,35 @@ class Worker():
         a_dist,rnn_state_new,added_noise,state_mean = sess.run([self.ac_network.policy,self.ac_network.state_out,
                                                       self.ac_network.added_noises_means, self.ac_network.states_means], 
                                                       feed_dict=feed_dict)
-        a                   = 1 * (np.random.rand(num_tasks) > np.cumsum(a_dist, axis=-1)[:,0])
+        a                   = 1 * (np.random.rand(num_trials) > np.cumsum(a_dist, axis=-1)[:,0])
         rch                 = self.env.pullArm(a)
 
         return rch.mean(), self.env.pullArm((self.env.proba_r > 0.5) * 1).mean()
 
-    def work(self,gamma,sess,saver,train,num_tasks=100):
+    def work(self, sess, saver, train, num_trials=100):
+        '''
+        This is the main function
+        Takes as input: sess, a Tensorflow session
+                        saver, a Tensorflow saver
+                        train boolean, do we train or not?
+                        num_trials, the number of trials the agent plays between each gradient update
+        The function will train the agent on the A task. To do so, the agent plays `num_trials` of A task, and at the end those trials,
+        we use the experience to perform a gradient update. When computation noise is assumed in the RNN, the noise realizations are 
+        saved in the buffer and then fed to the back-propagation process.
+        '''        
         episode_count = 0
         while True:
             episode_buffer     = []
             episode_reward     = 0
             episode_step_count = 0
                     
-            rnn_state          = np.tile(self.ac_network.state_init[0], (num_tasks, 1))
-            self.env.reset(num_tasks)
+            rnn_state          = np.tile(self.ac_network.state_init[0], (num_trials, 1))
+            self.env.reset(num_trials)
             state_mean_arr     = []
             added_noise_arr    = []  
-            h_noise  = np.array(np.random.normal(size=(num_tasks, num_steps + 1, self.ac_network.nb_units)) * self.coefficient, dtype=np.float32)
+            h_noise  = np.array(np.random.normal(size=(num_trials, num_steps + 1, self.ac_network.nb_units)) * self.coefficient, dtype=np.float32)
 
-            contexts = np.concatenate((np.tile(self.env.context, (num_steps, 1)).T, -np.ones(num_tasks)[:,np.newaxis]), axis=-1)
+            contexts = np.concatenate((np.tile(self.env.context, (num_steps, 1)).T, -np.ones(num_trials)[:,np.newaxis]), axis=-1)
 
             #Take an action using probabilities from policy network output.
             feed_dict = {self.ac_network.context:contexts,
@@ -219,7 +229,7 @@ class Worker():
             a_dist,rnn_state_new,added_noise,state_mean = sess.run([self.ac_network.policy,self.ac_network.state_out,
                                                           self.ac_network.added_noises_means, self.ac_network.states_means], 
                                                           feed_dict=feed_dict)
-            a                   = 1 * (np.random.rand(num_tasks) > np.cumsum(a_dist, axis=-1)[:,0])
+            a                   = 1 * (np.random.rand(num_trials) > np.cumsum(a_dist, axis=-1)[:,0])
             rch                 = self.env.pullArm(a)
             episode_step_count += 1
             episode_buffer.append([a,rch,contexts,h_noise,rnn_state])
@@ -260,8 +270,8 @@ class Worker():
                 summary.value.add(tag='Parameters/matrix_transition', simple_value=np.abs(sess.run(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[1])).mean())                
                 summary.value.add(tag='Parameters/matrix_input', simple_value=np.abs(sess.run(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[2])).mean())                                
                 if train == True:
-                    summary.value.add(tag='Losses/Policy Loss', simple_value=float(p_l)/num_tasks)
-                    summary.value.add(tag='Perf/Entropy', simple_value=float(e_l)/num_tasks)
+                    summary.value.add(tag='Losses/Policy Loss', simple_value=float(p_l)/num_trials)
+                    summary.value.add(tag='Perf/Entropy', simple_value=float(e_l)/num_trials)
                     summary.value.add(tag='Losses/Grad Norm', simple_value=float(g_n))
                     summary.value.add(tag='Losses/Var Norm', simple_value=float(v_n))
                 self.summary_writer.add_summary(summary, episode_count)
@@ -275,15 +285,13 @@ except:
     index = 1
 
 coefficient_list = np.array([1.])
-noise               = True
+noise            = True
 nb_coefficients  = len(coefficient_list)
-idx_simul           = int(index/nb_coefficients) # simulation id
-idx_coeff           = index - idx_simul * nb_coefficients # coefficient id
+idx_simul        = int(index/nb_coefficients) # simulation id
+idx_coeff        = index - idx_simul * nb_coefficients # coefficient id
 print('simulation id {0}, coefficient id {1}, coefficient val {2}'.format(idx_simul, idx_coeff, coefficient_list[idx_coeff]))
 
-gamma      = .5
-load_model = False
-train      = True
+load_model, train = False, True
 model_name = 'model_id{0}_coeff{1}_noise{2}'.format(idx_simul, str(coefficient_list[idx_coeff]).replace('.', '_'), noise*1)
 
 model_path = './save_models_here/' + model_name
@@ -305,5 +313,5 @@ with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
     # train
-    worker.work(gamma,sess,saver,train)
+    worker.work(sess,saver,train)
 

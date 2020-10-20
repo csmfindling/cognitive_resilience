@@ -10,7 +10,7 @@ class RNN():
         self.W           = tf.get_variable('W', shape=[hidden_size, hidden_size], initializer=xav_init())
         self.U           = tf.get_variable('U', shape=[input_size, hidden_size], initializer=xav_init())
         self.b           = tf.get_variable('b', shape=[hidden_size], initializer=tf.constant_initializer(0.))
-        self.add_noise = add_noise
+        self.add_noise   = add_noise
     
     # step operation
     def step(self, tuple_, x):
@@ -22,6 +22,6 @@ class RNN():
         ht_exact = ht
         if self.add_noise:
             noise_added = noise_h * tf.math.abs(ht - st_1)
-            noise_added = tf.stop_gradient(noise_added) # treat noise as contraint which the network is unaware of
+            noise_added = tf.stop_gradient(noise_added) # treat noise as contraint, which the network is unaware of
             ht          = ht + noise_added
         return tf.tanh(ht),  tf.reduce_mean(tf.math.abs(ht - ht_exact))

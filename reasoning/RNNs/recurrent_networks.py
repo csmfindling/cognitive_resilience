@@ -18,8 +18,8 @@ class RNN():
         if self.add_noise:
             x, noise_h = x[:,:self.input_size], x[:,-self.hidden_size:]        
         # update hidden state
-        ht = tf.matmul(st_1, self.W) + tf.matmul(x, self.U) + self.b
-        ht_exact    = ht
+        ht       = tf.matmul(st_1, self.W) + tf.matmul(x, self.U) + self.b
+        ht_exact = ht
         if self.add_noise:            
             noise_added = noise_h
             noise_added = tf.stop_gradient(noise_added)

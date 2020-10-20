@@ -20,6 +20,11 @@ def discount(x, gamma):
 
 num_steps    = 100
 def generate_task(k=0.05):
+    '''
+    train task: bandit with fixed reward schedules
+    Input: k, the probability of false feedback
+    Output: the rewards (-1/1), and the probability of observing a reward
+    '''
     rand_int     = np.random.randint(2)
     rand_int     = np.random.randint(2) 
     proba_r      = np.zeros(num_steps) 
@@ -29,21 +34,24 @@ def generate_task(k=0.05):
         random_numb  = np.random.rand(num_steps)        
         rewards[:,0] = (proba_r < random_numb) * 1.
         rewards[:,1] = (proba_r >= random_numb) * 1.
-        if np.abs(rewards[:,1].mean() - ((0. + k) * (rand_int == 0) + (1. - k) * (rand_int == 1))) < 0.01 :
-            break
     return 2 * rewards - 1, proba_r
 
 def generate_reversal_task():
+    '''
+    test task: bandit with a reversal in the middle
+    Output: the rewards (-1/1), and the probability of observing a reward
+    '''    
     proba_r         = np.zeros([100])
     rand_int        = np.random.randint(2) 
     default         = rand_int * 0.95 + (1 - rand_int) * 0.05
     proba_r[:50]    = default; 
     proba_r[50:]    = 1 - default;
-    rewards       = np.zeros([100, 2]); random_numb   = np.random.rand(100)
-    rewards[:,0]  = (proba_r < random_numb) * 1.
-    rewards[:,1]  = (proba_r >= random_numb) * 1.
+    rewards         = np.zeros([100, 2]); random_numb = np.random.rand(100)
+    rewards[:,0]    = (proba_r < random_numb) * 1.
+    rewards[:,1]    = (proba_r >= random_numb) * 1.
     return 2 * rewards - 1, proba_r
 
+# class to generate the bandit tasks
 class conditioning_bandit():
     def __init__(self):
         self.reset()
@@ -70,7 +78,7 @@ class conditioning_bandit():
         self.set_restless_prob()
     
 class AC_Network():
-    def __init__(self,trainer, noise, coefficient):
+    def __init__(self, trainer, noise, coefficient):
         '''
         Returns the graph. 
         Takes as input: trainer, a tensorflow optimizer
@@ -151,9 +159,9 @@ class Worker():
         self.ac_network = AC_Network(trainer, noise, coefficient)
         self.env      = game
         
-    def train(self,rollout,sess,gamma,bootstrap_value):
+    def train(self, rollout, sess, gamma, bootstrap_value):
         '''
-        train method in bandit with fixed reward schedules A task
+        train method
         '''        
         rollout           = np.array(rollout)
         actions           = rollout[:,0]
@@ -207,12 +215,22 @@ class Worker():
                 self.env.update()
         return episode_reward
         
-    def work(self,gamma,sess,saver,train):
+    def work(self, gamma, sess, saver, train):
+        '''
+        This is the main function
+        Takes as input: gamma, the discount factor
+                        sess, a Tensorflow session
+                        saver, a Tensorflow saver
+                        train boolean, do we train or not?
+        The function will train the agent on the A task. To do so, the agent plays an A episode, and at the end of the episode, 
+        we use the experience to perform a gradient update. When computation noise is assumed in the RNN, the noise realizations are 
+        saved in the buffer and then fed to the back-propagation process.
+        '''
         episode_count = 0
         while True:
             episode_buffer, state_mean_arr, added_noise_arr = [], [], []
             episode_reward, episode_step_count = 0, 0
-            d, a, t, rch       = False, 2, 0, 0
+            d, a, t, rch       = False, 2, 0, 0 #initialization parameters (in particular, the previous action is initialized to a null one-hot vector, a=2)
             rnn_state          = self.ac_network.state_init[0]
             self.env.reset()
             
@@ -251,7 +269,7 @@ class Worker():
             if episode_count % 50 == 0 and episode_count != 0:
                 self.episode_reward_reversal.append(self.test(sess)) # reward on A* task
                 if episode_count % 500 == 0 and train == True:
-                    saver.save(sess,self.model_path+'/model-'+str(episode_count)+'.cptk')
+                    saver.save(sess, self.model_path+'/model-'+str(episode_count)+'.cptk')
                     print("Saved Model")
                         
                 if episode_count % 5e4 == 0: # stopping criterion
@@ -284,16 +302,15 @@ try:
 except:
     index = 0
     
-coefficient_list    = np.array([1.])
-noise               = True
-nb_coefficients     = len(coefficient_list)
-idx_simul           = int(index/nb_coefficients) # simulation id
-idx_coeff           = index - idx_simul * nb_coefficients # coefficient id
+coefficient_list = np.array([1.])
+noise            = True
+nb_coefficients  = len(coefficient_list)
+idx_simul        = int(index/nb_coefficients) # simulation id
+idx_coeff        = index - idx_simul * nb_coefficients # coefficient id
 print('simulation id {0}, coefficient id {1}, coefficient val {2}'.format(idx_simul, idx_coeff, coefficient_list[idx_coeff]))
 
 gamma      = .5
-load_model = False
-train      = True
+load_model, train = False, True
 model_name = 'model_id{0}_coeff{1}_noise{2}'.format(idx_simul, str(coefficient_list[idx_coeff]).replace('.', '_'), noise*1)
 
 model_path = './save_models_here/' + model_name
