@@ -1,6 +1,6 @@
 <h1> Computation noise promotes cognitive resilience </h1>
 
-This is a project realised at Ecole Normale Supérieure under the supervision of Valentin Wyart
+Authors: Charles Findling and Valentin Wyart
 
 <h3> Summary of the paper </h3>
 
@@ -22,9 +22,9 @@ In each folder, you will find:
 
 <h3> Code specifications </h3>
 
-python version: Python 3.7.2 \\
-tensorflow version: Tensorflow 1.15.0 \\
-tensorboard version: Tensorboard 2.0.0 \\
+python version: Python 3.7.2  
+tensorflow version: Tensorflow 1.15.0  
+tensorboard version: Tensorboard 2.0.0  
 
 <h3> Code instructions </h3>
 
