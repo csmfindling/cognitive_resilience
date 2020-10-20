@@ -40,7 +40,7 @@ tensorboard --logdir=REINFORCEtrainings
 ```
 
 <h3> Questions </h3>
-If you have any question, do not hesitate to contact me at charles.findling@gmail.com
+If you have any question, do not hesitate to contact me at charles.findling[at]gmail.com
 
 
 
