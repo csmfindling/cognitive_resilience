@@ -17,24 +17,24 @@ In each folder, you will find:
 <ul>
 	<li> a `main.py` file which contains the body of the script (the training and testing functions)
 	<li> a `RNNs` folder which contains the code for the RNNs
-	<li> two additional folders `REINFORCEtrainings` and `save_models_here` where folder information are saved
+	<li> two additional folders `REINFORCEtrainings` and `save_models_here` where model information is saved
 </ul>
 
 <h3> Code specifications </h3>
 
-python version: Python 3.7.2 
-tensorflow version: Tensorflow 1.15.0
-tensorboard version: Tensorboard 2.0.0
+python version: Python 3.7.2 \\
+tensorflow version: Tensorflow 1.15.0 \\
+tensorboard version: Tensorboard 2.0.0 \\
 
 <h3> Code instructions </h3>
 
-In each `main.py` file, there is at the end a python `main` method indicating an example of how to launch the code. There is essentially two arguments, `noise`, `coefficient_list`. The `noise` variable indicates whether we introduce computation noise (`noise=1`) or decision entropy (`noise=0`). Given the `noise` variable, the `coefficient_list` indicates the amount of computation noise or decision entropy.
+In each `main.py` file, there is at the end a python `main` method indicating an example of how to launch the code. There is essentially two arguments, `noise`, `coefficient_list`. The `noise` variable indicates whether we introduce computation noise (`noise=1`) or decision entropy (`noise=0`). Given the `noise` variable, the `coefficient_list` indicates the level of the computation noise or decision entropy.
 
 If you open a terminal and go to one of the two folders (e.g., `reasoning`), and launch the command
 ```
 python main.py
 ```
-Then, the python `main.py` will launch itself. To follow the training visually, launch in another terminal, go the directory and write the command
+Then, the python `main.py` will launch itself. To follow the training visually, launch in another terminal, go the directory and enter the command
 ```
 tensorboard --logdir=REINFORCEtrainings
 ```
