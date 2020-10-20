@@ -12,13 +12,13 @@ This code provides the implementations of the recurrent neural networks (RNNs). 
 <ul>
 	<li> a `reasoning` folder in which there is the code for the probabilistic reasoning setting. In this setting, we train the RNN on a `associative learning` A task where the agent is taught cue-action associations. Then, without further instructions and feedback, we test it on a `weather prediction` A* task where the agent is presented with sequences of heterogeous cues.
 	<li> a `conditioning` folder in which there is the code for the reward-guided learning setting. In this setting, we train the RNN on a bandit task A with fixed reward schedules and then test it on a A* with changing reward schedules.
-<ul>
+</ul>
 In each folder, you will find: 
 <ul>
 	<li> a `main.py` file which contains the body of the script (the training and testing functions)
 	<li> a `RNNs` folder which contains the code for the RNNs
 	<li> two additional folders `REINFORCEtrainings` and `save_models_here` where folder information are saved
-<ul>
+</ul>
 
 <h3> Code specifications </h3>
 
