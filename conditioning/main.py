@@ -34,6 +34,8 @@ def generate_task(k=0.05):
         random_numb  = np.random.rand(num_steps)        
         rewards[:,0] = (proba_r < random_numb) * 1.
         rewards[:,1] = (proba_r >= random_numb) * 1.
+        if np.abs(rewards[:,1].mean() - ((0. + k) * (rand_int == 0) + (1. - k) * (rand_int == 1))) < 0.01 :
+            break        
     return 2 * rewards - 1, proba_r
 
 def generate_reversal_task():
@@ -280,18 +282,18 @@ class Worker():
                 mean_hidden    = np.mean(self.hidden_mean_values[-50:])
                 mean_reversal  = np.mean(self.episode_reward_reversal[-1])
                 summary = tf.Summary()
-                summary.value.add(tag='Perf/Reward', simple_value=float(mean_reward))
+                summary.value.add(tag='Perf/reward', simple_value=float(mean_reward))
                 summary.value.add(tag='Perf/reversal_Reward', simple_value=float(mean_reversal))
-                summary.value.add(tag='Info/Noise_added', simple_value=float(mean_noiseadd))
-                summary.value.add(tag='Info/Hidden_activity', simple_value=float(mean_hidden))
+                summary.value.add(tag='Info/noise_added', simple_value=float(mean_noiseadd))
+                summary.value.add(tag='Info/hidden_activity', simple_value=float(mean_hidden))
                 summary.value.add(tag='Parameters/biases_transition', simple_value=np.abs(sess.run(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[3])).mean())
                 summary.value.add(tag='Parameters/matrix_transition', simple_value=np.abs(sess.run(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[1])).mean())                
                 summary.value.add(tag='Parameters/matrix_input', simple_value=np.abs(sess.run(tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)[2])).mean())                                
                 if train == True:
-                    summary.value.add(tag='Losses/Policy Loss', simple_value=float(p_l))
-                    summary.value.add(tag='Losses/Entropy', simple_value=float(e_l))
-                    summary.value.add(tag='Losses/Grad Norm', simple_value=float(g_n))
-                    summary.value.add(tag='Losses/Var Norm', simple_value=float(v_n))
+                    summary.value.add(tag='Losses/policy Loss', simple_value=float(p_l))
+                    summary.value.add(tag='Losses/entropy', simple_value=float(e_l))
+                    summary.value.add(tag='Losses/grad Norm', simple_value=float(g_n))
+                    summary.value.add(tag='Losses/var Norm', simple_value=float(v_n))
                 self.summary_writer.add_summary(summary, episode_count)
                 self.summary_writer.flush()
                                 
